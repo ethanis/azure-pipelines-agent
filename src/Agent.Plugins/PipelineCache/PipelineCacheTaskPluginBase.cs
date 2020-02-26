@@ -153,6 +153,7 @@ namespace Agent.Plugins.PipelineCache
             public static readonly string PipelineId = "pipelineId";
             public static readonly string CacheHitVariable = "cacheHitVar";
             public static readonly string Salt = "salt";
+            public static readonly string DryRun = "dryRun";
         }
 
         protected void WaitForDebuggerAttach()

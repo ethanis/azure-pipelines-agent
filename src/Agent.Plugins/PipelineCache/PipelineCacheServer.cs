@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -49,6 +50,7 @@ namespace Agent.Plugins.PipelineCache
                     context.Output($"Cache with fingerprint `{getResult.Fingerprint}` already exists.");
                     return;
                 }
+                t
 
                 context.Output("Resolving path:");
                 Fingerprint pathFp = FingerprintCreator.EvaluateToFingerprint(context, workingDirectory, pathSegments, FingerprintType.Path);
@@ -106,6 +108,7 @@ namespace Agent.Plugins.PipelineCache
             string[] pathSegments,
             string cacheHitVariable,
             string workingDirectory,
+            string dryRun,
             CancellationToken cancellationToken)
         {
             VssConnection connection = context.VssConnection;
@@ -122,7 +125,11 @@ namespace Agent.Plugins.PipelineCache
                 // Send results to CustomerIntelligence
                 context.PublishTelemetry(area: PipelineArtifactConstants.AzurePipelinesAgent, feature: PipelineArtifactConstants.PipelineCache, record: cacheRecord);
 
-                if (result != null)
+                if (dryRun == "true")
+                {
+                    context.Output(result != null ? "Cache exists." : "Cache doesn't exist");
+                }
+                else if (result != null)
                 {
                     context.Output($"Entry found at fingerprint: `{result.Fingerprint.ToString()}`");
                     context.Verbose($"Manifest ID is: {result.ManifestId.ValueString}");

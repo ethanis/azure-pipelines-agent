@@ -33,6 +33,7 @@ namespace Agent.Plugins.PipelineCache
                 pathSegments,
                 context.GetInput(PipelineCacheTaskPluginConstants.CacheHitVariable, required: false),
                 workingDirectory,
+                context.GetInput(PipelineCacheTaskPluginConstants.DryRun, required: false),
                 token);
         }
     }
