@@ -124,27 +124,32 @@ namespace Agent.Plugins.PipelineCache
                 // Send results to CustomerIntelligence
                 context.PublishTelemetry(area: PipelineArtifactConstants.AzurePipelinesAgent, feature: PipelineArtifactConstants.PipelineCache, record: cacheRecord);
 
-                if (dryRun == "true")
-                {
-                    context.Output(result != null ? "Cache exists." : "Cache doesn't exist");
-                }
-                else if (result != null)
+                if (result != null)
                 {
                     context.Output($"Entry found at fingerprint: `{result.Fingerprint.ToString()}`");
                     context.Verbose($"Manifest ID is: {result.ManifestId.ValueString}");
-                    PipelineCacheActionRecord downloadRecord = clientTelemetry.CreateRecord<PipelineCacheActionRecord>((level, uri, type) =>
-                        new PipelineCacheActionRecord(level, uri, type, nameof(DownloadAsync), context));
-                    await clientTelemetry.MeasureActionAsync(
-                        record: downloadRecord,
-                        actionAsync: async () =>
-                        {
-                            await this.DownloadPipelineCacheAsync(context, dedupManifestClient, result.ManifestId, pathSegments, workspaceRoot, Enum.Parse<ContentFormat>(result.ContentFormat), cancellationToken);
-                        });
 
-                    // Send results to CustomerIntelligence
-                    context.PublishTelemetry(area: PipelineArtifactConstants.AzurePipelinesAgent, feature: PipelineArtifactConstants.PipelineCache, record: downloadRecord);
+                    // We only care about the existence of a cache if this is a dry-run
+                    if (string.Equals(dryRun, "true", StringComparison.OrdinalIgnoreCase))
+                    {
+                        context.Output(result != null ? "Cache exists." : "Cache doesn't exist.");
+                    }
+                    else 
+                    {
+                        PipelineCacheActionRecord downloadRecord = clientTelemetry.CreateRecord<PipelineCacheActionRecord>((level, uri, type) =>
+                            new PipelineCacheActionRecord(level, uri, type, nameof(DownloadAsync), context));
+                        await clientTelemetry.MeasureActionAsync(
+                            record: downloadRecord,
+                            actionAsync: async () =>
+                            {
+                                await this.DownloadPipelineCacheAsync(context, dedupManifestClient, result.ManifestId, pathSegments, workspaceRoot, Enum.Parse<ContentFormat>(result.ContentFormat), cancellationToken);
+                            });
 
-                    context.Output("Cache restored.");
+                        // Send results to CustomerIntelligence
+                        context.PublishTelemetry(area: PipelineArtifactConstants.AzurePipelinesAgent, feature: PipelineArtifactConstants.PipelineCache, record: downloadRecord);
+
+                        context.Output("Cache restored.");
+                    }
                 }
 
                 if (!string.IsNullOrEmpty(cacheHitVariable))
